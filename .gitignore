@@ -1,0 +1,13 @@
+# Ignore Terraform dirt
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/.terraform/modules/
+
+# Local execution plans
+*.tfplan
+
+# Crash logs
+crash.log
+crash.*.log
