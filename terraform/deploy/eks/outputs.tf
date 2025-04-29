@@ -48,3 +48,8 @@ output "oidc_provider_url" {
   description = "URL of the OIDC Provider for the EKS cluster (without https://)"
   value       = module.eks_cluster.oidc_provider_url
 }
+
+output "node_role_arn" {
+  description = "ARN of the EKS node IAM role"
+  value       = module.eks_cluster.node_role_arn
+}

@@ -3,35 +3,61 @@ variable "cluster_name" {
   description = "Name of the EKS cluster."
 }
 
-variable "nodes_desired_size" {
+# System node group variables
+variable "system_nodes_desired_size" {
   type = number
   default = 2
-  description = "Desired number of worker nodes in the EKS cluster."
+  description = "Desired number of system worker nodes in the EKS cluster."
 }
 
-variable "nodes_max_size" {
+variable "system_nodes_max_size" {
   type = number
   default = 3
-  description = "Maximum number of worker nodes in the EKS cluster."
+  description = "Maximum number of system worker nodes in the EKS cluster."
 }
 
-variable "nodes_min_size" {
+variable "system_nodes_min_size" {
+  type = number
+  default = 2
+  description = "Minimum number of system worker nodes in the EKS cluster."
+}
+
+variable "system_node_instance_type" {
+  type        = list(string)
+  default     = ["t3.micro"]
+  description = "List of instance types for system worker nodes in the EKS cluster."
+}
+
+# Application node group variables
+variable "app_nodes_desired_size" {
   type = number
   default = 1
-  description = "Minimum number of worker nodes in the EKS cluster."
+  description = "Desired number of application worker nodes in the EKS cluster."
 }
 
-variable "node_instance_type" {
+variable "app_nodes_max_size" {
+  type = number
+  default = 2
+  description = "Maximum number of application worker nodes in the EKS cluster."
+}
+
+variable "app_nodes_min_size" {
+  type = number
+  default = 1
+  description = "Minimum number of application worker nodes in the EKS cluster."
+}
+
+variable "app_node_instance_type" {
   type        = list(string)
-  default     = ["t3.medium"]
-  description = "List of instance types for worker nodes in the EKS cluster."
+  default     = ["t3.micro"]
+  description = "List of instance types for application worker nodes in the EKS cluster."
 }
 
-# variable "argocd_version" {
-#   type        = string
-#   default     = "7.7.13"
-#   description = "ArgoCD version to deploy."
-# }
+variable "argocd_version" {
+  type        = string
+  default     = "7.7.13"
+  description = "ArgoCD version to deploy."
+}
 
 variable "thumbprint_list" {
   type        = list(string)

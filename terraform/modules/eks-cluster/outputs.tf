@@ -74,3 +74,18 @@ output "oidc_provider_url" {
   description = "URL of the OIDC Provider for the EKS cluster (without https://)"
   value       = local.eks_oidc_issuer_url
 }
+
+output "node_role_arn" {
+  description = "ARN of the EKS node IAM role"
+  value       = aws_iam_role.nodes.arn
+}
+
+output "system_node_group_id" {
+  description = "ID of the system node group"
+  value       = aws_eks_node_group.system-nodes.id
+}
+
+output "app_node_group_id" {
+  description = "ID of the application node group"
+  value       = aws_eks_node_group.app-nodes.id
+}

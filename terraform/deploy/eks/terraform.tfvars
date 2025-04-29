@@ -17,11 +17,16 @@ thumbprint_list = [
 # AWS addon registry
 aws_addon_registry = "602401143452.dkr.ecr.eu-west-1.amazonaws.com"
 
-# EKS node group configuration
-nodes_desired_size = 2  # Increased to handle CNI properly
-nodes_max_size     = 3
-nodes_min_size     = 1
-node_instance_type = ["t3.medium"]  # Changed to t3.medium for better performance
+# System nodes configuration
+system_nodes_desired_size = 2  # 1 node for system applications
+system_nodes_max_size     = 3
+system_nodes_min_size     = 2
+system_node_instance_type = ["t3.small"]  
+# Application nodes configuration
+app_nodes_desired_size = 1  # 1 node for user applications
+app_nodes_max_size     = 2
+app_nodes_min_size     = 1
+app_node_instance_type = ["t3.micro"]  # Changed to micro for cost savings
 
 # Networking
 vpc_cidr = "10.0.0.0/16"

@@ -1,11 +1,11 @@
-# Create IAM policy for AWS Load Balancer Controller
+# AWS Load Balancer Controller resources
 resource "aws_iam_policy" "aws_lb_controller_policy" {
   name        = "AWSLoadBalancerControllerIAMPolicy"
   description = "IAM Policy for AWS Load Balancer Controller"
   policy      = file("${path.module}/iam-policy.json")
 }
 
-# Create IAM role for AWS Load Balancer Controller
+# Create IAM role for ALB ingress controller
 resource "aws_iam_role" "aws_lb_controller_role" {
   name = "AWSLoadBalancerControllerRole"
 
@@ -30,13 +30,13 @@ resource "aws_iam_role" "aws_lb_controller_role" {
   depends_on = [aws_iam_openid_connect_provider.eks_oidc]
 }
 
-# Attach the policy to the role
+# Attach IAM policy to ALB ingress controller
 resource "aws_iam_role_policy_attachment" "lb_controller_policy_attachment" {
   role       = aws_iam_role.aws_lb_controller_role.name
   policy_arn = aws_iam_policy.aws_lb_controller_policy.arn
 }
 
-# Create the Kubernetes service account for the AWS Load Balancer Controller
+# Create service account for ALB ingress controller in kube-system namespace.
 resource "kubernetes_service_account" "aws_lb_controller" {
   metadata {
     name      = "aws-load-balancer-controller"
@@ -44,17 +44,23 @@ resource "kubernetes_service_account" "aws_lb_controller" {
     annotations = {
       "eks.amazonaws.com/role-arn" = aws_iam_role.aws_lb_controller_role.arn
     }
+    labels = {
+      "app.kubernetes.io/component" = "controller"
+      "app.kubernetes.io/name"      = "aws-load-balancer-controller"
+    }
   }
-  depends_on = [aws_eks_node_group.private-nodes]
+  
+  # Update the depends_on to use system-nodes instead of private-nodes
+  depends_on = [aws_eks_node_group.system-nodes]
 }
 
-# Install the AWS Load Balancer Controller using Helm
+# Install AWS Load Balancer Controller using Helm
 resource "helm_release" "aws_load_balancer_controller" {
   name       = "aws-load-balancer-controller"
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
   namespace  = "kube-system"
-  version    = "1.4.8"  # Update to the latest version as needed
+  version    = var.alb_controller_version
 
   set {
     name  = "clusterName"
@@ -80,9 +86,36 @@ resource "helm_release" "aws_load_balancer_controller" {
     name  = "vpcId"
     value = aws_vpc.main.id
   }
+  
+  # Add node selector to schedule controller on system nodes
+  set {
+    name  = "nodeSelector.role"
+    value = "system"
+  }
+  
+  # Add tolerations for the system node taint
+  set {
+    name  = "tolerations[0].key"
+    value = "dedicated"
+  }
+  
+  set {
+    name  = "tolerations[0].value" 
+    value = "system"
+  }
+  
+  set {
+    name  = "tolerations[0].operator"
+    value = "Equal"
+  }
+  
+  set {
+    name  = "tolerations[0].effect"
+    value = "NoSchedule"
+  }
 
   depends_on = [
     kubernetes_service_account.aws_lb_controller,
-    aws_eks_node_group.private-nodes
+    aws_eks_node_group.system-nodes
   ]
 }

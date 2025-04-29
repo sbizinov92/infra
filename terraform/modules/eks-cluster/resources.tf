@@ -1,3 +1,16 @@
+# Get the existing KMS alias if it exists
+data "aws_kms_alias" "existing_default_alias" {
+  name = "alias/${var.env}-default"
+  
+  # Prevent errors if the alias doesn't exist
+  count = 0
+}
+
+locals {
+  # Check if we need to create a new key or use existing one
+  create_new_kms_key = length(data.aws_kms_alias.existing_default_alias) == 0
+}
+
 # Create KMS key for EKS cluster encryption (only for cluster secrets)
 resource "aws_kms_key" "eks_key" {
   description             = "KMS key for EKS cluster ${var.cluster_name} secrets"
@@ -14,9 +27,9 @@ resource "aws_kms_key" "eks_key" {
   )
 }
 
-# Create alias for the KMS key
+# Create alias for the KMS key with a unique name to avoid conflicts
 resource "aws_kms_alias" "eks_key_alias" {
-  name          = "alias/${var.env}-default"
+  name          = "alias/${var.env}-default-eks-${var.cluster_name}"
   target_key_id = aws_kms_key.eks_key.key_id
 }
 

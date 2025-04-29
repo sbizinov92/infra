@@ -39,7 +39,7 @@ resource "aws_launch_template" "eks_with_kms" {
 
     ebs {
       encrypted   = true
-      volume_size = 30  # Increased to 30GB for better performance
+      volume_size = 20  # Reduced to 20GB for cost savings
       volume_type = "gp3"
       # Not using custom KMS key to avoid permission issues
       # kms_key_id  = aws_kms_key.eks_key.arn
@@ -57,10 +57,11 @@ resource "aws_launch_template" "eks_with_kms" {
   # EKS will create its own instance profile based on the node role
 }
 
-# Define main node group config.
-resource "aws_eks_node_group" "private-nodes" {
+# Define system node group for system apps (ArgoCD, controllers, etc.)
+resource "aws_eks_node_group" "system-nodes" {
+  force_update_version = true
   cluster_name    = aws_eks_cluster.infra-cluster.name
-  node_group_name = "private-nodes"
+  node_group_name = "system-nodes"
   node_role_arn   = aws_iam_role.nodes.arn
 
   # Use both private and public subnets for more flexibility
@@ -70,13 +71,12 @@ resource "aws_eks_node_group" "private-nodes" {
   )
 
   capacity_type  = "ON_DEMAND"
-  instance_types = var.node_instance_type
-  # Don't specify disk_size here as it must be in the launch template
+  instance_types = var.system_node_instance_type
 
   scaling_config {
-    desired_size = var.nodes_desired_size
-    max_size     = var.nodes_max_size
-    min_size     = var.nodes_min_size
+    desired_size = var.system_nodes_desired_size
+    max_size     = var.system_nodes_max_size
+    min_size     = var.system_nodes_min_size
   }
 
   update_config {
@@ -84,10 +84,75 @@ resource "aws_eks_node_group" "private-nodes" {
   }
 
   labels = {
-    node = "kubenode"
+    role = "system"
   }
   
-  tags = var.finops_tags
+  # Add taints to ensure only system workloads run on these nodes
+  taint {
+    key    = "dedicated"
+    value  = "system"
+    effect = "NO_SCHEDULE"
+  }
+  
+  tags = merge(
+    var.finops_tags,
+    {
+      "node-type" = "system"
+    }
+  )
+  
+  # Using the launch template without instance profile
+  # EKS will create its own instance profile based on the node role
+  launch_template {
+    name    = aws_launch_template.eks_with_kms.name
+    version = aws_launch_template.eks_with_kms.latest_version
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.nodes-AmazonEKSWorkerNodePolicy,
+    aws_iam_role_policy_attachment.nodes-AmazonEKS_CNI_Policy,
+    aws_iam_role_policy_attachment.nodes-AmazonEC2ContainerRegistryReadOnly,
+    aws_iam_role_policy_attachment.nodes-kms-policy,
+    aws_iam_role.nodes,
+  ]
+}
+
+# Define application node group for user applications
+resource "aws_eks_node_group" "app-nodes" {
+  force_update_version = true
+  cluster_name    = aws_eks_cluster.infra-cluster.name
+  node_group_name = "app-nodes"
+  node_role_arn   = aws_iam_role.nodes.arn
+
+  # Use both private and public subnets for more flexibility
+  subnet_ids = concat(
+    aws_subnet.private[*].id,
+    aws_subnet.public[*].id
+  )
+
+  capacity_type  = "ON_DEMAND"
+  instance_types = var.app_node_instance_type
+
+  scaling_config {
+    desired_size = var.app_nodes_desired_size
+    max_size     = var.app_nodes_max_size
+    min_size     = var.app_nodes_min_size
+  }
+
+  update_config {
+    max_unavailable = 1
+  }
+
+  labels = {
+    role = "application"
+  }
+  
+  tags = merge(
+    var.finops_tags,
+    {
+      "node-type" = "application"
+    }
+  )
   
   # Using the launch template without instance profile
   # EKS will create its own instance profile based on the node role
@@ -126,13 +191,41 @@ resource "helm_release" "argocd" {
   namespace        = "argocd"
   create_namespace = true
   version          = var.argocd_version
+  
   set {
     name  = "params.server.insecure"
     value = "true"
   }
+  
+  # Add node selector to schedule ArgoCD components on system nodes
+  set {
+    name  = "global.nodeSelector.role"
+    value = "system"
+  }
+  
+  # Add tolerations for the system node taint
+  set {
+    name  = "global.tolerations[0].key"
+    value = "dedicated"
+  }
+  
+  set {
+    name  = "global.tolerations[0].value"
+    value = "system"
+  }
+  
+  set {
+    name  = "global.tolerations[0].operator"
+    value = "Equal"
+  }
+  
+  set {
+    name  = "global.tolerations[0].effect"
+    value = "NoSchedule"
+  }
 
   depends_on = [
-    aws_eks_node_group.private-nodes,
+    aws_eks_node_group.system-nodes,
     aws_security_group_rule.eks_pritunl_access
   ]
 }

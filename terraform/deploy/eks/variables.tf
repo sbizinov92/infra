@@ -1,13 +1,13 @@
 variable "aws_region" {
   description = "The AWS region to deploy resources"
   type        = string
-  default     = "eu-west-1" # Updated default region
+  default     = "eu-west-1"
 }
 
 variable "thumbprint_list" {
   description = "List of server certificate thumbprints for OIDC identity provider"
   type        = list(string)
-  default     = ["9e99a48a9960b14926bb7f3b02e22da2b0ab7280"] # Example thumbprint, replace with actual value if needed
+  default     = ["9e99a48a9960b14926bb7f3b02e22da2b0ab7280"]
 }
 
 variable "env" {
@@ -19,32 +19,57 @@ variable "env" {
 variable "aws_addon_registry" {
   description = "AWS addon registry URL"
   type        = string
-  # Default Amazon ECR registry for addons
   default     = "602401143452.dkr.ecr.eu-west-1.amazonaws.com"
 }
 
-variable "nodes_desired_size" {
+# System node group variables
+variable "system_nodes_desired_size" {
   type        = number
-  default     = 2  # Updated for better performance
-  description = "Desired number of worker nodes in the EKS cluster."
+  default     = 2
+  description = "Desired number of system worker nodes in the EKS cluster."
 }
 
-variable "nodes_max_size" {
+variable "system_nodes_max_size" {
   type        = number
-  default     = 3  # Updated for better performance
-  description = "Maximum number of worker nodes in the EKS cluster."
+  default     = 3
+  description = "Maximum number of system worker nodes in the EKS cluster."
 }
 
-variable "nodes_min_size" {
+variable "system_nodes_min_size" {
+  type        = number
+  default     = 2
+  description = "Minimum number of system worker nodes in the EKS cluster."
+}
+
+variable "system_node_instance_type" {
+  type        = list(string)
+  default     = ["t3.micro"]
+  description = "List of instance types for system worker nodes in the EKS cluster."
+}
+
+# Application node group variables
+variable "app_nodes_desired_size" {
   type        = number
   default     = 1
-  description = "Minimum number of worker nodes in the EKS cluster."
+  description = "Desired number of application worker nodes in the EKS cluster."
 }
 
-variable "node_instance_type" {
+variable "app_nodes_max_size" {
+  type        = number
+  default     = 2
+  description = "Maximum number of application worker nodes in the EKS cluster."
+}
+
+variable "app_nodes_min_size" {
+  type        = number
+  default     = 1
+  description = "Minimum number of application worker nodes in the EKS cluster."
+}
+
+variable "app_node_instance_type" {
   type        = list(string)
-  default     = ["t3.medium"]  # Updated to medium for better performance
-  description = "List of instance types for worker nodes in the EKS cluster."
+  default     = ["t3.micro"]
+  description = "List of instance types for application worker nodes in the EKS cluster."
 }
 
 variable "finops_tags" {
