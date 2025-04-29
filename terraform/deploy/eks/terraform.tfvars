@@ -26,7 +26,7 @@ system_node_instance_type = ["t3.small"]
 app_nodes_desired_size = 1  
 app_nodes_max_size     = 2
 app_nodes_min_size     = 1
-app_node_instance_type = ["t3.micro"]  
+app_node_instance_type = ["t3.small"]  
 
 # Networking
 vpc_cidr = "10.0.0.0/16"
