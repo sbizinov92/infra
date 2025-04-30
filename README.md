@@ -52,12 +52,7 @@ terraform/
    - Broad Access Controls
    - No Cross-Region Replication
 
-2. **Management**:
-   - Simple Lifecycle Policy
-   - No Automated Builds
-
-3. **Scalability**:
-   - Single Repository
+2. **Scalability**:
    - No Cross-Account Access
 
 </details>
@@ -67,17 +62,15 @@ terraform/
 ## Security Considerations for Production
 
 - Enable Private Endpoint Access to EKS
-- Implement Network Policies (e.g., Calico)
+- Implement Network Policies 
 - Use IAM Roles for Service Accounts (IRSA)
 - Setup Logging and Monitoring (Prometheus/Grafana)
 - Use Image Tag Immutability for ECR
-- Enable ECR Cross-Region Replication
 
 ---
 
 ## Argo CD Setup
 
-Argo CD is deployed for GitOps-driven Kubernetes management.  
 Access is secured via basic authentication.  
 The Argo CD dashboard can be accessed via **port forwarding**:
 
